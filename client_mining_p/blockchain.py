@@ -12,7 +12,7 @@ class Blockchain(object):
         self.current_transactions = []
 
         # Create the genesis block
-        self.new_block(previous_hash=1, proof=100)
+        self.new_block(previous_hash="I'm a teapot", proof=100)
 
     def new_block(self, proof, previous_hash=None):
         """
@@ -35,7 +35,7 @@ class Blockchain(object):
             'timestamp': time(),
             'transactions': self.current_transactions,
             'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1])
+            'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
         # Reset the current list of transactions
@@ -77,24 +77,25 @@ class Blockchain(object):
         # TODO: Return the hashed block string in hexadecimal format
         return hex_hash
 
+    # this just returns our last block, the @property to let's you use the method as a property, so instead of using it like this last_block(), we can do just this last_block.
     @property
     def last_block(self):
         return self.chain[-1]
 
-    def proof_of_work(self, block):
-        """
-        Simple Proof of Work Algorithm
-        Stringify the block and look for a proof.
-        Loop through possibilities, checking each one against `valid_proof`
-        in an effort to find a number that is a valid proof
-        :return: A valid proof for the provided block
-        """
+    # def proof_of_work(self, block):
+    #     """
+    #     Simple Proof of Work Algorithm
+    #     Stringify the block and look for a proof.
+    #     Loop through possibilities, checking each one against `valid_proof`
+    #     in an effort to find a number that is a valid proof
+    #     :return: A valid proof for the provided block
+    #     """
         
-        block_string = json.dumps(block, sort_keys=True)
-        proof = 0
-        while self.valid_proof(block_string, proof) is False:
-            proof += 1
-        return proof
+    #     block_string = json.dumps(block, sort_keys=True)
+    #     proof = 0
+    #     while self.valid_proof(block_string, proof) is False:
+    #         proof += 1
+    #     return proof
 
     @staticmethod
     def valid_proof(block_string, proof):
@@ -113,7 +114,7 @@ class Blockchain(object):
         guess = f'{block_string}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
 
-        return guess_hash[:6] == "000000"
+        return guess_hash[:3] == "000"
 
 # Instantiate our Node
 app = Flask(__name__)
@@ -123,23 +124,34 @@ node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
+print('block chain:', blockchain.chain)
 print('hash', blockchain.hash(blockchain.last_block))
 
-
-@app.route('/mine', methods=['GET'])
+@app.route('/mine', methods=['POST'])
 def mine():
+    data = request.get_json()
     # Run the proof of work algorithm to get the next proof
-    proof = blockchain.proof_of_work(blockchain.last_block)
-    # Forge the new Block by adding it to the chain with the proof
-    previous_hash = blockchain.hash(blockchain.last_block)
-    new_block = blockchain.new_block(proof, previous_hash)
+    proof = data['proof']
 
-    response = {
-        # TODO: Send a JSON response with the new block
-        "block": new_block
-    }
+    last_block = blockchain.last_block
+    last_block_string = json.dumps(last_block, sort_keys=True)
 
-    return jsonify(response), 200
+    if blockchain.valid_proof(last_block_string, proof):
+        # Forge the new Block by adding it to the chain with the proof
+        previous_hash = blockchain.hash(blockchain.last_block)
+        new_block = blockchain.new_block(proof, previous_hash)
+
+        response = {
+            # TODO: Send a JSON response with the new block
+            "block": new_block
+        }
+
+        return jsonify(response), 200
+    else:
+        response = {
+            "message": "Bad proof"
+        }
+        return jsonify(response), 200
 
 
 @app.route('/chain', methods=['GET'])
@@ -150,7 +162,7 @@ def full_chain():
         "length": len(blockchain.chain)
     }
     return jsonify(response), 200
-
+# we need to make the endpoint where the client will connect to the server
 @app.route('/last_block', methods=['GET'])
 def last_block():
     response = {

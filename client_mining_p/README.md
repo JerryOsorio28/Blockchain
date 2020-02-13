@@ -9,9 +9,9 @@ Furthermore, the amount of work needed to actually mine a block is a bit low.  W
 
 *Server*
 Modify the server we created to:
-* Remove the `proof_of_work` function from the server. :ballot_box_with_check:
+# 3 * Remove the `proof_of_work` function from the server. :ballot_box_with_check:
 * Change `valid_proof` to require *6* leading zeroes. :ballot_box_with_check:
-* Add an endpoint called `last_block` that returns the last block in the chain
+# 1 * Add an endpoint called `last_block` that returns the last block in the chain
 * Modify the `mine` endpoint to instead receive and validate or reject a new proof sent by a client.
     * It should accept a POST
     * Use `data = request.get_json()` to pull the data out of the POST
@@ -22,7 +22,7 @@ Modify the server we created to:
 
 *Client Mining*
 Create a client application that will:
-* Get the last block from the server
+# 2 * Get the last block from the server :ballot_box_with_check:
 * Run the `proof_of_work` function until a valid proof is found, validating or rejecting each attempt.  Use a copy of `valid_proof` to assist.
 * Print messages indicating that this has started and finished.
 * Modify it to generate proofs with *6* leading zeroes.
