@@ -74,6 +74,7 @@ if __name__ == '__main__':
         new_proof = proof_of_work(new_block)
 
         print(f'Proof found: {new_proof}')
+        # breakpoint()
         # When found, POST it to the server {"proof": new_proof, "id": id}
         post_data = {"proof": new_proof, "id": id}
 
