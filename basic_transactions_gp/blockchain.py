@@ -4,6 +4,7 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 
 class Blockchain(object):
@@ -120,6 +121,11 @@ class Blockchain(object):
 
 # Instantiate our Node
 app = Flask(__name__)
+CORS(app)
+
+@app.route('/')
+def helloWorld():
+    return "Hello, cross-origin-world!"
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
@@ -128,6 +134,27 @@ node_identifier = str(uuid4()).replace('-', '')
 blockchain = Blockchain()
 print('block chain:', blockchain.chain)
 print('hash', blockchain.hash(blockchain.last_block))
+
+@app.route('/transaction/new', methods=['POST'])
+def receive_new_transaction():
+    # * use `request.get_json()` to pull the data out of the POST
+    # * check that 'sender', 'recipient', and 'amount' are present
+    # * return a 400 error using `jsonify(response)` with a 'message'
+    # * upon success, return a 'message' indicating index of the block
+    # containing the transaction
+
+    data = request.get_json()
+
+    required = ['sender', 'recipient', 'amount']
+    if not all(k in data for k in required):
+        # TODO: Better error handling message
+        return 'missing values', 400
+    
+    index = blockchain.new_transaction(data['sender'], data['recipient'], data['amount'])    
+
+    response = {'message': f'Transactions will be included in block {index}'}
+
+    return jsonify(response), 200
 
 @app.route('/mine', methods=['POST'])
 def mine():

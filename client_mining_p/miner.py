@@ -37,9 +37,10 @@ def valid_proof(block_string, proof):
     # return True or False
     guess = f'{block_string}{proof}'.encode()
     guess_hash = hashlib.sha256(guess).hexdigest()
+    # print('guess_hash', guess_hash)
+    # breakpoint()
 
     return guess_hash[:3] == "000"
-
 
 if __name__ == '__main__':
     # What is the server address? IE `python3 miner.py https://server.com/api/`
