@@ -54,19 +54,18 @@ class Blockchain(object):
         """
 
         # Use json.dumps to convert json into a string
+        # We must make sure that the Dictionary is Ordered,
+        # or we'll have inconsistent hashes
+        string_object = json.dumps(block, sort_keys=True) # sort keys make sure the properties in the object are in order, if not the hash will be different.
         # Use hashlib.sha256 to create a hash
         # It requires a `bytes-like` object, which is what
         # .encode() does.
         # It converts the Python string into a byte string.
-        # We must make sure that the Dictionary is Ordered,
-        # or we'll have inconsistent hashes
+        raw_hash = hashlib.sha256(string_object.encode())
+        hex_hash = raw_hash.hexdigest()
 
         # TODO: Create the block_string
-        string_object = json.dumps(block, sort_keys=True)
-        block_string = string_object.encode()
         # TODO: Hash this string using sha256
-        raw_hash = hashlib.sha256(block_string)
-        hex_hash = raw_hash.hexdigest()
 
         # By itself, the sha256 function returns the hash in a raw string
         # that will likely include escaped characters.
