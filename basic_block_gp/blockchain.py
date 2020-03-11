@@ -112,7 +112,7 @@ class Blockchain(object):
         guess = f'{block_string}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
 
-        return guess_hash[:6] == "000000"
+        return guess_hash[:3] == "000"
 
 # Instantiate our Node
 app = Flask(__name__)
@@ -122,7 +122,7 @@ node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
-print('hash', blockchain.hash(blockchain.last_block))
+# print('hash', blockchain.hash(blockchain.last_block))
 
 
 @app.route('/mine', methods=['GET'])

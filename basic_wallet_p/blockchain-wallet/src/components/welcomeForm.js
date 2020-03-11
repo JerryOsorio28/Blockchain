@@ -1,30 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const WelcomeForm = props => {
-    const [user, SetUser] = useState({
-        username: '',
-        valid: false,
-        errorMessage: ''
-    })
 
-    console.log('state', user)
     console.log('props', props)
 
     const userHandler = e => {
-        // console.log('input', e.target.name)
-        const input = {...user, [e.target.name]: e.target.value}
-        SetUser(input)
+        const input = {...props.user, [e.target.name]: e.target.value}
+        props.setUser(input)
     }
 
     const submitHandler = e => {
         e.preventDefault()
-        if(user.username === ''){
-            SetUser({...user, errorMessage: <p style={{color: 'red', fontWeight: 'bold'}}>*You must type and username to continue.</p>})
+        if(props.user.username === ''){
+            props.setUser({...props.user, errorMessage: <p style={{color: 'red', fontWeight: 'bold'}}>*You must type an username to continue.</p>})
         }
-        else if(user.username.length < 4){
-            SetUser({...user, errorMessage: <p style={{color: 'red', fontWeight: 'bold'}}>*Username must be at least 4 characters long.</p>})
+        else if(props.user.username.length < 4){
+            props.setUser({...props.user, errorMessage: <p style={{color: 'red', fontWeight: 'bold'}}>*Username must be at least 4 characters long.</p>})
         } else {
-            SetUser({...user, valid: true})
+            props.setUser({...props.user, valid: true})
             props.history.push('/wallet')
         }
     }
@@ -33,14 +26,14 @@ const WelcomeForm = props => {
         <>
             <h1>Thank you for testing our Wallet App!</h1>
             <h3>What would you like your username to be?</h3>
-            {user.valid === false ? 
-                <div>{user.errorMessage}</div>
+            {props.user === undefined ? null : props.user.valid === false ? 
+                <div>{props.user.errorMessage}</div>
             : null}
             <form>
                 <input 
                     placeholder='Username'
                     name='username'
-                    value={user.username}
+                    value={props.user === undefined ? null : props.user.username}
                     onChange={userHandler}
                     style={{marginTop: '10px'}}
                 >

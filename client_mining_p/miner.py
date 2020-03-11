@@ -1,5 +1,6 @@
 import hashlib
 import requests
+import time
 
 import sys
 import json
@@ -33,14 +34,11 @@ def valid_proof(block_string, proof):
     correct number of leading zeroes.
     :return: True if the resulting hash is a valid proof, False otherwise
     """
-    # TODO
-    # return True or False
     guess = f'{block_string}{proof}'.encode()
     guess_hash = hashlib.sha256(guess).hexdigest()
-    # print('guess_hash', guess_hash)
-    # breakpoint()
 
-    return guess_hash[:3] == "000"
+    # TODO return True or False
+    return guess_hash[:6] == "000000"
 
 if __name__ == '__main__':
     # What is the server address? IE `python3 miner.py https://server.com/api/`
@@ -55,8 +53,11 @@ if __name__ == '__main__':
     print("ID is", id)
     f.close()
 
+    lambda_coins = 0
     # Run forever until interrupted
     while True:
+        start_time = time.time()
+
         r = requests.get(url=node + "/last_block")
         # Handle non-json response
         try:
@@ -70,12 +71,12 @@ if __name__ == '__main__':
         print('data', data)
 
         # TODO: Get the block from `data` and use it to look for a new proof
-        new_block = data['last_block']
+        last_block = data['last_block']
+        new_proof = proof_of_work(last_block)
 
-        new_proof = proof_of_work(new_block)
+        if new_proof:
+            print(f'Proof found: {new_proof}')
 
-        print(f'Proof found: {new_proof}')
-        # breakpoint()
         # When found, POST it to the server {"proof": new_proof, "id": id}
         post_data = {"proof": new_proof, "id": id}
 
@@ -86,4 +87,14 @@ if __name__ == '__main__':
         # TODO: If the server responds with a 'message' 'New Block Forged'
         # add 1 to the number of coins mined and print it.  Otherwise,
         # print the message from the server.
-        pass
+        if 'Your block has been mined and added to the chain, congrats!' in data['message']:
+            end_time = time.time() 
+            result = end_time - start_time
+            minutes = 0
+            while result >= 60:
+                minutes += 1
+                result -= 60
+            lambda_coins += 1
+
+            print(f'The time it took was {minutes} minutes and {int(result)} seconds.')
+            print(f'Congrats! You have earned a lambda coin! Total Lambda Coins: {lambda_coins}')

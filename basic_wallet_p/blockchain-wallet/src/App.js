@@ -11,9 +11,14 @@ function App(props) {
 
   const [chain, setChain] = useState()
   console.log('Entire Blockchain', chain)
-  console.log('PROPS', props)
 
-  // const authenticated = false
+  const [user, setUser] = useState({
+    username: '',
+    valid: false,
+    errorMessage: ''
+})
+
+console.log('User from App', user)
 
   useEffect(() => {
     axios.get('http://localhost:5000/chain')
@@ -35,8 +40,14 @@ function App(props) {
           <img src={logo} className="App-logo" alt="logo" />
           <h1>Blockchain Wallet</h1>
         </header>
-          <Route exact path='/' component={WelcomeForm}/>
-          <Route path='/wallet' component={Wallet}/>
+          <Route 
+            exact path='/'
+            render={props => <WelcomeForm {...props} user={user} setUser={setUser} />}
+          />
+          <Route 
+            path='/wallet'
+            render={props => <Wallet {...props} user={user} setUser={setUser} />}
+          />
       </div>
   );
 }

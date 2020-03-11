@@ -52,32 +52,21 @@ class Blockchain(object):
         :param block": <dict> Block
         "return": <str>
         """
-
         # Use json.dumps to convert json into a string
-        # Use hashlib.sha256 to create a hash
-        # It requires a `bytes-like` object, which is what
-        # .encode() does.
-        # It converts the Python string into a byte string.
-        # We must make sure that the Dictionary is Ordered,
-        # or we'll have inconsistent hashes
-
-        # TODO: Create the block_string
+        # We must make sure that the Dictionary is ordered,or we'll have inconsistent hashes
         string_object = json.dumps(block, sort_keys=True)
+        # Create the block_string. It requires a `bytes-like` object, which is what .encode() does.
         block_string = string_object.encode()
-        # TODO: Hash this string using sha256
+        # By itself, the sha256 function returns the hash in a raw string that will likely include escaped characters.
+        # Use hashlib.sha256 to create a hash
         raw_hash = hashlib.sha256(block_string)
+        # This can be hard to read, but .hexdigest() converts the hash to a string of hexadecimal characters, which is easier to work with and understand
         hex_hash = raw_hash.hexdigest()
-
-        # By itself, the sha256 function returns the hash in a raw string
-        # that will likely include escaped characters.
-        # This can be hard to read, but .hexdigest() converts the
-        # hash to a string of hexadecimal characters, which is
-        # easier to work with and understand
 
         # TODO: Return the hashed block string in hexadecimal format
         return hex_hash
 
-    # this just returns our last block, the @property to let's you use the method as a property, so instead of using it like this last_block(), we can do just this last_block.
+    # this just returns our last block, the @property to let's you use the method as a property, so instead of using as 'last_block()', we can do 'last_block'.
     @property
     def last_block(self):
         return self.chain[-1]
@@ -124,34 +113,41 @@ node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
-print('block chain:', blockchain.chain)
-print('hash', blockchain.hash(blockchain.last_block))
 
 @app.route('/mine', methods=['POST'])
 def mine():
     data = request.get_json()
     # Run the proof of work algorithm to get the next proof
     proof = data['proof']
+    block_id = data['id']
+    # print('block_id', block_id)
 
-    last_block = blockchain.last_block
-    last_block_string = json.dumps(last_block, sort_keys=True)
-
-    if blockchain.valid_proof(last_block_string, proof):
-        # Forge the new Block by adding it to the chain with the proof
-        previous_hash = blockchain.hash(blockchain.last_block)
-        new_block = blockchain.new_block(proof, previous_hash)
-
+    if not proof or not block_id:
         response = {
-            # TODO: Send a JSON response with the new block
-            "block": new_block
+            'message': 'Please provide proof and ID'
         }
-
-        return jsonify(response), 200
+        return jsonify(response), 400
     else:
-        response = {
-            "message": "Bad proof"
-        }
-        return jsonify(response), 200
+        last_block = blockchain.last_block
+        last_block_string = json.dumps(last_block, sort_keys=True)
+
+        if blockchain.valid_proof(last_block_string, proof):
+            # Forge the new Block by adding it to the chain with the proof
+            previous_hash = blockchain.hash(blockchain.last_block)
+            new_block = blockchain.new_block(proof, previous_hash)
+
+            response = {
+                # TODO: Send a JSON response with the new block
+                "block": new_block,
+                "message": 'Your block has been mined and added to the chain, congrats!'
+            }
+            return jsonify(response), 200
+
+        else:
+            response = {
+                "message": "Bad proof"
+            }
+            return jsonify(response), 200
 
 
 @app.route('/chain', methods=['GET'])
@@ -162,7 +158,8 @@ def full_chain():
         "length": len(blockchain.chain)
     }
     return jsonify(response), 200
-# we need to make the endpoint where the client will connect to the server
+
+# we need to make the endpoint that will retrieve the last block in the chain
 @app.route('/last_block', methods=['GET'])
 def last_block():
     response = {
