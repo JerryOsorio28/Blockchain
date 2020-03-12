@@ -134,7 +134,7 @@ def receive_transaction():
                                     values['recipient'],
                                     values['amount'])
 
-    response = {'message': f'Transaction will be added to block {index}'}
+    response = {'message': f'Transaction will be added to block {index}!\n'}
     return jsonify(response), 201
 
 @app.route('/mine', methods=['POST'])
