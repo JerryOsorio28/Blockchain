@@ -18,8 +18,6 @@ function App(props) {
     errorMessage: ''
 })
 
-console.log('User from App', user)
-
   useEffect(() => {
     axios.get('http://localhost:5000/chain')
     .then(res => {

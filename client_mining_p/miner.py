@@ -38,7 +38,7 @@ def valid_proof(block_string, proof):
     guess_hash = hashlib.sha256(guess).hexdigest()
 
     # TODO return True or False
-    return guess_hash[:6] == "000000"
+    return guess_hash[:3] == "000"
 
 if __name__ == '__main__':
     # What is the server address? IE `python3 miner.py https://server.com/api/`
@@ -82,7 +82,13 @@ if __name__ == '__main__':
 
         r = requests.post(url=node + "/mine", json=post_data)
         # TODO: Catch non-json responses error
-        data = r.json()
+        try:
+            data = r.json()
+        except ValueError:
+            print("Error:  Non-json response")
+            print("Response returned:")
+            print(r)
+            break
 
         # TODO: If the server responds with a 'message' 'New Block Forged'
         # add 1 to the number of coins mined and print it.  Otherwise,

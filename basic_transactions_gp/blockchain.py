@@ -4,7 +4,6 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 
 
 class Blockchain(object):
@@ -14,6 +13,20 @@ class Blockchain(object):
 
         # Create the genesis block
         self.new_block(previous_hash="I'm a teapot", proof=100)
+
+    def new_transaction(self, sender, recipient, amount):
+        # :param sender: <str> Address of the Recipient
+        # :param recipient: <str> Address of the Recipient
+        # :param amount: <int> Amount
+        # :return: <int> The index of the `block` that will hold this transaction
+
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount
+        })
+
+        return self.last_block['index'] + 1
 
     def new_block(self, proof, previous_hash=None):
         """
@@ -45,23 +58,6 @@ class Blockchain(object):
         self.chain.append(block)
         # Return the new block
         return block
-    
-    def new_transaction(self, sender, recipient, amount):
-        '''
-        :param sender: <str> Address of the Recipient
-        :param recipient: <str> Address of the Recipient
-        :param amount: <int> Amount
-        :return: <int> The index of the `block` that will hold this transaction
-        '''
-        transaction = {
-            'sender': sender,
-            'recipient': recipient,
-            'amount': amount
-        }
-        # appends our transactions to our blockchain
-        self.current_transactions.append(transaction)
-
-        return self.last_block['index'] + 1
 
     def hash(self, block):
         """
@@ -70,32 +66,21 @@ class Blockchain(object):
         :param block": <dict> Block
         "return": <str>
         """
-
         # Use json.dumps to convert json into a string
-        # Use hashlib.sha256 to create a hash
-        # It requires a `bytes-like` object, which is what
-        # .encode() does.
-        # It converts the Python string into a byte string.
-        # We must make sure that the Dictionary is Ordered,
-        # or we'll have inconsistent hashes
-
-        # TODO: Create the block_string
+        # We must make sure that the Dictionary is ordered,or we'll have inconsistent hashes
         string_object = json.dumps(block, sort_keys=True)
+        # Create the block_string. It requires a `bytes-like` object, which is what .encode() does.
         block_string = string_object.encode()
-        # TODO: Hash this string using sha256
+        # By itself, the sha256 function returns the hash in a raw string that will likely include escaped characters.
+        # Use hashlib.sha256 to create a hash
         raw_hash = hashlib.sha256(block_string)
+        # This can be hard to read, but .hexdigest() converts the hash to a string of hexadecimal characters, which is easier to work with and understand
         hex_hash = raw_hash.hexdigest()
-
-        # By itself, the sha256 function returns the hash in a raw string
-        # that will likely include escaped characters.
-        # This can be hard to read, but .hexdigest() converts the
-        # hash to a string of hexadecimal characters, which is
-        # easier to work with and understand
 
         # TODO: Return the hashed block string in hexadecimal format
         return hex_hash
 
-    # this just returns our last block, the @property to let's you use the method as a property, so instead of using it like this last_block(), we can do just this last_block.
+    # this just returns our last block, the @property to let's you use the method as a property, so instead of using as 'last_block()', we can do 'last_block'.
     @property
     def last_block(self):
         return self.chain[-1]
@@ -121,67 +106,68 @@ class Blockchain(object):
 
 # Instantiate our Node
 app = Flask(__name__)
-CORS(app)
-
-@app.route('/')
-def helloWorld():
-    return "Hello, cross-origin-world!"
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
-print('block chain:', blockchain.chain)
-print('hash', blockchain.hash(blockchain.last_block))
 
-@app.route('/transaction/new', methods=['POST'])
-def receive_new_transaction():
-    # * use `request.get_json()` to pull the data out of the POST
-    # * check that 'sender', 'recipient', and 'amount' are present
-    # * return a 400 error using `jsonify(response)` with a 'message'
-    # * upon success, return a 'message' indicating index of the block
-    # containing the transaction
+# Create an endpoint at `/transactions/new` that accepts a json `POST`:
 
-    data = request.get_json()
+#     * use `request.get_json()` to pull the values out of the POST
+#     * check that 'sender', 'recipient', and 'amount' are present
+#         * return a 400 error using `jsonify(response)` with a 'message'
+#     * upon success, return a 'message' indicating index of the block
+#       containing the transaction
 
+@app.route('/transactions/new', methods=['POST'])
+def receive_transaction():
+    values = request.get_json()
+    # Run the proof of work algorithm to get the next proof
     required = ['sender', 'recipient', 'amount']
-    if not all(k in data for k in required):
-        # TODO: Better error handling message
-        return 'missing values', 400
-    
-    index = blockchain.new_transaction(data['sender'], data['recipient'], data['amount'])    
+    if not all(k in values for k in required):
+        response = {'message': 'Missing values'}
+        return jsonify(response), 400
 
-    response = {'message': f'Transactions will be included in block {index}'}
+    index = blockchain.new_transaction(values['sender'],
+                                    values['recipient'],
+                                    values['amount'])
 
-    return jsonify(response), 200
+    response = {'message': f'Transaction will be added to block {index}'}
+    return jsonify(response), 201
 
 @app.route('/mine', methods=['POST'])
 def mine():
-    data = request.get_json()
+    values = request.get_json()
     # Run the proof of work algorithm to get the next proof
-    proof = data['proof']
+    required = ['proof', 'id']
+    if not all(k in values for k in required):
+        response = {'message': 'Missing values'}
+        return jsonify(response), 400
+    
+    submitted_proof = values['proof']
 
     last_block = blockchain.last_block
     last_block_string = json.dumps(last_block, sort_keys=True)
 
-    if blockchain.valid_proof(last_block_string, proof):
+    if blockchain.valid_proof(last_block_string, submitted_proof):
+
+        blockchain.new_transaction('',
+                                    values['id'],
+                                    0)
+
         # Forge the new Block by adding it to the chain with the proof
         previous_hash = blockchain.hash(blockchain.last_block)
-
-        block_index = blockchain.new_transaction(0, data['id'], 1)
-
-        new_block = blockchain.new_block(proof, previous_hash)
-
-        
+        new_block = blockchain.new_block(submitted_proof, previous_hash)
 
         response = {
             # TODO: Send a JSON response with the new block
             "block": new_block,
-            "reward": 'Reward paid in block {block_index}'
+            "message": 'Your block has been mined and added to the chain, congrats!'
         }
-
         return jsonify(response), 200
+
     else:
         response = {
             "message": "Bad proof"
@@ -197,7 +183,8 @@ def full_chain():
         "length": len(blockchain.chain)
     }
     return jsonify(response), 200
-# we need to make the endpoint where the client will connect to the server
+
+# we need to make the endpoint that will retrieve the last block in the chain
 @app.route('/last_block', methods=['GET'])
 def last_block():
     response = {
