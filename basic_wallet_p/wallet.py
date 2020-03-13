@@ -11,8 +11,13 @@ def proof_of_work(block):
     # number of proofs before finding a valid one
     proof = 0
     # while we validate the proof, it increases proof by 1.
+    line = ''
     while valid_proof(block_string, proof) is False:
         proof += 1
+        line += '|'
+        if(len(line) > 10):
+            line = ''
+        print(line)
     return proof
 
 
@@ -22,7 +27,7 @@ def valid_proof(block_string, proof):
     # This converts the encoded string into a fixed hexadecimal number
     guess_hash = hashlib.sha256(guess).hexdigest()
         
-    return guess_hash[:3] == "000"
+    return guess_hash[:5] == "00000"
 
 # User Class
 class User:
